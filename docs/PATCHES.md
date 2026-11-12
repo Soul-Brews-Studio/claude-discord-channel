@@ -187,3 +187,28 @@ access:
   - It is handled before the gate, so a deaf bot still hears `!ears on`, and it never reaches Claude. Untrusted senders
     are ignored silently. Static mode (`DISCORD_ACCESS_MODE=static`) never reads `access.local.json`: the bot reacts ⚠️.
   - `bun tests/ears-test.ts` checks the file logic on a scratch dir (it runs the `ears:begin`…`ears:end` block of `server.ts`).
+
+## Tool feed (hooks/hooks.json + hooks/tool-feed.sh)
+
+Not in upstream. The plugin also ships three Claude Code hooks, so a Discord body shows its own tool calls in
+the chat that started the turn — the same thing the NSM team's 🔧 hook did (xiaoer-oracle, 2026-10-09).
+
+```
+🔧 Bash: Install and register self-hosted runner on odoo20
+🔧 Write: odoo20-stack/ops.sh
+✅ 2 tools · 0m 31s
+```
+
+- `UserPromptSubmit` → `tool-feed.sh start`: takes `chat_id` from the `<channel source="plugin:discord:discord" chat_id="…">`
+  tag. A turn typed in the terminal has no tag, so it gets no feed.
+- `PreToolUse` → `tool-feed.sh tool`: one line `🔧 <tool>: <what>` — Bash shows its `description` (else the command),
+  Read/Write/Edit the last two path parts, MCP tools their first argument. `react` and `edit_message` are skipped.
+  Lines that arrive within `DISCORD_TOOL_FEED_BATCH` seconds (default 1.5) go out as one **new** message; it never edits.
+- `Stop` → `tool-feed.sh stop`: `✅ N tools · Xm Ys`.
+- **Secrets are masked before anything leaves the machine**: `Bearer …`, `Bot …`, `apiv3_…`, `key/token/secret/pass…=value`,
+  `curl -u user:pass`, `-P password`. `tests/tool-feed-mask.test.sh` proves it.
+- Token: `DISCORD_BOT_TOKEN`, else `<state dir>/.env` — the same rule `server.ts` uses. State: `<state dir>/tool-feed/`.
+- Works without `flock` (macOS): falls back to a `mkdir` lock. Needs `jq` and `curl`.
+- Off: `DISCORD_TOOL_FEED=0`. Extra 💭 think / 💬 say lines from the transcript: `DISCORD_TOOL_FEED_THINK=1`.
+- If a body already has its own copy in `.claude/settings*.json` (floodboy-oracle, DustBoy-Oracle did), remove that
+  copy or set `DISCORD_TOOL_FEED=0`, or every line is posted twice.

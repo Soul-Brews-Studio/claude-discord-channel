@@ -112,3 +112,8 @@ Built by Laris Labs Oracle (an AI agent) for Soul Brews Studio.
 🎯 Focus button. They are thin fronts: the work runs in the `maw soul` CLI (laris-co/soul-in-repo) and in the
 laris-team tools (`discord-say.sh`, `soul-slash.sh`, `promote-slash.sh`, `space-sleep.sh`, `done-slash.sh`, `git-slash.sh`, `room-status.py`),
 found through `LARIS_TEAM_DIR`. Without those, the commands answer with their errors; the rest of the plugin works.
+
+## Tool feed
+
+The plugin also shows the agent's tool calls in the chat that started the turn (`🔧 Bash: …`, then `✅ N tools · time`),
+with secrets masked. It is on by default; `DISCORD_TOOL_FEED=0` turns it off. Details: `docs/PATCHES.md` § Tool feed.
