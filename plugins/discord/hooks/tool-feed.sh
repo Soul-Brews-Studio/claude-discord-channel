@@ -94,6 +94,16 @@ ingest() {  # new transcript entries since last call -> "HH:MM:SS think (Ns)" / 
   mv "$ST.new" "$ST.new.done" 2>/dev/null
 }
 
+ctx_used() {  # context in use = last assistant turn's input + cache tokens (transcript), as "ctx 732k/1000k (73%)"
+  local tp u lim
+  tp=$(printf '%s' "$IN" | jq -r '.transcript_path // ""'); [ -f "$tp" ] || return 0
+  u=$(tail -n 200 "$tp" | jq -r 'select(.type == "assistant" and .message.usage) | .message.usage
+        | (.input_tokens // 0) + (.cache_read_input_tokens // 0) + (.cache_creation_input_tokens // 0)' 2>/dev/null | tail -1)
+  [ -n "$u" ] && [ "$u" -gt 0 ] 2>/dev/null || return 0
+  lim="${DISCORD_TOOL_FEED_CTX_LIMIT:-${TOOL_FEED_CTX_LIMIT:-1000000}}"
+  printf ' · ctx %dk/%dk (%d%%)' $((u / 1000)) $((lim / 1000)) $((u * 100 / lim))
+}
+
 case "$MODE" in
 _send)
   [ -f "$ST" ] && locked send ;;
@@ -125,7 +135,7 @@ stop)
   [ "$TOOL_FEED_THINK" = 1 ] && locked ingest
   dur=$(( $(now) - $(jq -r '.t0' "$ST") ))
   locked bash -c 'jq --arg f "$1" ".buf += [\$f]" "$2" > "$2.tmp" && mv "$2.tmp" "$2"' _ \
-    "$(printf '✅ %s tools · %dm %02ds' "$(jq -r '.n' "$ST")" $((dur/60)) $((dur%60)))" "$ST"
+    "$(printf '✅ %s tools · %dm %02ds' "$(jq -r '.n' "$ST")" $((dur/60)) $((dur%60)))$(ctx_used)" "$ST"
   flush_later 0.2 ;;
 esac
 exit 0
