@@ -1,0 +1,14 @@
+{
+  "description": "tool-feed: post the agent's tool calls into the Discord chat that started the turn (off: DISCORD_TOOL_FEED=0)",
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/tool-feed.sh start", "timeout": 5 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/tool-feed.sh tool", "timeout": 5 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/tool-feed.sh stop", "timeout": 5 } ] }
+    ]
+  }
+}
